@@ -1,14 +1,6 @@
 [theme]
-base="dark"
-primaryColor="#a5c9ca"
+base = "dark"
+primaryColor="#EB6440"
 backgroundColor="#2c3333"
 secondaryBackgroundColor="#395b64"
 textColor="#e7f6f2"
-
-[theme]
-base="light"
-primaryColor="#eb6440"
-backgroundColor="#eff5f5"
-secondaryBackgroundColor="#d6e4e5"
-textColor="#497174"
-
