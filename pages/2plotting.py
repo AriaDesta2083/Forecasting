@@ -8,7 +8,7 @@ import pandas as pd
 if "boolean" not in st.session_state:
     st.session_state.boolean = False
 
-st.set_page_config(page_title="Plotting", page_icon="📈")
+st.set_page_config(page_title="Plotting", page_icon="images/unej.png")
 seesion = st.session_state.boolean
 st.markdown("# Plotting")
 st.sidebar.header("Harga Gula Pasir Lokal")

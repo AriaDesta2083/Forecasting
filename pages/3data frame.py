@@ -4,7 +4,7 @@ import numpy as np
 from FTSCheng import newdata,monthdata
 import pandas as pd
 
-st.set_page_config(page_title="DataFrame", page_icon="📊")
+st.set_page_config(page_title="DataFrame", page_icon="images/unej.png")
 
 st.markdown("# Data")
 st.sidebar.header("Harga Gula Pasir Lokal")

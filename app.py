@@ -1,3 +1,4 @@
+# https://ariadesta2083-fts.streamlit.app/
 import streamlit as st
 st.set_page_config(
     page_title="SKRIPSI",
