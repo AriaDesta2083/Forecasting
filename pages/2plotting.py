@@ -5,6 +5,9 @@ import numpy as np
 from FTSCheng import newdata,monthdata
 import pandas as pd
 
+if "boolean" not in st.session_state:
+    st.session_state.boolean = False
+
 st.set_page_config(page_title="Plotting", page_icon="📈")
 seesion = st.session_state.boolean
 st.markdown("# Plotting")

@@ -43,30 +43,27 @@ def Prepocessing(data):
     return tanggal,harga
 
 def PlotMonth(dates,prices):
-    # Membuat kamus defaultdict untuk menyimpan harga-harga per bulan dan tahun
+    #* Membuat kamus defaultdict untuk menyimpan harga-harga per bulan dan tahun
     prices_per_month_year = defaultdict(int)
     count_per_month_year = defaultdict(int)
 
-    # Mengelompokkan harga-harga per bulan dan tahun dan menghitung jumlah data per bulan dan tahun
+    #* Mengelompokkan harga-harga per bulan dan tahun dan menghitung jumlah data per bulan dan tahun
     for date, price in zip(dates, prices):
         month_year = date.strftime('%Y-%m')
         prices_per_month_year[month_year] += price
         count_per_month_year[month_year] += 1
 
-    # Membuat array tanggal baru dan array harga baru
+    #* Membuat array tanggal baru dan array harga baru
     new_dates = []
     new_prices = []
 
-    # Mengisi array tanggal baru dan array harga baru dengan nilai rata-rata per bulan dan tahun
+    #* Mengisi array tanggal baru dan array harga baru dengan nilai rata-rata per bulan dan tahun
     for month_year, price_sum in prices_per_month_year.items():
         count = count_per_month_year[month_year]
         average_price = price_sum / count
         new_dates.append(month_year)
         new_prices.append(int(round(average_price)))
     
-    # Menampilkan array tanggal baru dan array harga baru
-    # print("Tanggal Baru:", new_dates)
-    # print("Harga Baru:", new_prices)
     return new_dates,new_prices
 
 def SemestaU(Data,D1,D2):
