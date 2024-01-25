@@ -1,6 +1,10 @@
 [theme]
 base = "dark"
 primaryColor="#EB6440"
-backgroundColor="#2c3333"
+backgroundColor="#222222"
 secondaryBackgroundColor="#395b64"
 textColor="#e7f6f2"
+
+
+[deprecation]
+showPyplotGlobalUse = false
