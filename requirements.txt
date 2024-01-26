@@ -2,3 +2,4 @@ st-annotated-text
 pandas
 numpy
 altair
+locale
