@@ -32,9 +32,27 @@ values = st.slider(
 )
 
 
-annotated_text(("Range data", ""), " : ", (str(values[1] - values[0]), "data"))
-annotated_text((str(tanggal[values[0]]), ""), " - ", (str(tanggal[values[1]]), ""))
+option_interpolate = st.sidebar.selectbox(
+    "Pilih bentuk line chart",
+    (
+        "basis",
+        "bundle",
+        "cardinal",
+        "catmull-rom",
+        "linear",
+        "monotone",
+        "natural",
+        "step",
+    ),
+)
 
+
+annotated_text(("Range data", ""), " : ", (str(values[1] - values[0]), "data"))
+annotated_text(
+    (f"{datetime.strptime(tanggal[values[0]], '%Y-%m-%d').strftime('%d %B %Y')}", ""),
+    " - ",
+    (f"{datetime.strptime(tanggal[values[1]],'%Y-%m-%d').strftime('%d %B %Y')}", ""),
+)
 
 source = pd.DataFrame(
     {
@@ -55,7 +73,9 @@ nearest = alt.selection_point(
 # The basic line
 line = (
     alt.Chart(source_melted)
-    .mark_line(interpolate="basis")
+    .mark_line(
+        interpolate=option_interpolate,
+    )
     .interactive(bind_y=True, bind_x=False)
     .encode(
         x=alt.X("Tanggal:T", title="Tanggal"),

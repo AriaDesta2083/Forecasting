@@ -40,21 +40,24 @@ st.markdown(
 container = st.container()
 col1, cols, col2, cola, col3 = st.columns([5, 1, 5, 1, 5])
 with st.container():
-    col1.code("Kemarin", language="python")
+    col1.code(
+        "Kemarin",
+        language="python",
+    )
     col1.metric(
         f"{kemarin.strftime('%A, %d %b %Y')} ",
         f"{locale.currency(new_peramalan[-3], grouping=True)}",
         f"{new_peramalan[-3] - new_peramalan[-4]}",
     )
 
-    col2.code("Hari ini")
+    col2.code("Hari ini", language="python")
     col2.metric(
         f"{hari_ini.strftime('%A, %d %b %Y')}",
         f"{locale.currency(new_peramalan[-2], grouping=True)}",
         f"{new_peramalan[-2] - new_peramalan[-3]}",
     )
 
-    col3.code("Besok")
+    col3.code("Besok", language="python")
     col3.metric(
         f"{besok.strftime('%A, %d %b %Y')}",
         f"{locale.currency(new_peramalan[-1], grouping=True)}",

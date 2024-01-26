@@ -1,3 +1,4 @@
+import time
 import numpy as np
 import pandas as pd
 import streamlit as st
@@ -152,11 +153,13 @@ rules = (
 )
 
 
-st.altair_chart(
-    alt.layer(chartaltair, selectors, points, rules, text).properties(height=500),
-    theme=None,
-    use_container_width=True,
-)
+with st.spinner("Wait for it..."):
+    time.sleep(3)
+    st.altair_chart(
+        alt.layer(chartaltair, selectors, points, rules, text).properties(height=500),
+        theme=None,
+        use_container_width=True,
+    )
 
 
 # Menampilkan grafik Altair di Streamlit

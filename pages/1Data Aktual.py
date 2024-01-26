@@ -14,12 +14,17 @@ annotated_text(
     " di pasar tradisional ",
     (" Indonesia", "", "color:#fea;border:2px dashed #fea"),
 )
-annotated_text(("Januari 2021", ""), " - ", ("Desember 2023", ""))
 
 newdata = Filterdata(dataprepocessing, 0)
 
 datedata = {"Tanggal": newdata[0], "Harga": newdata[1]}
 df = pd.DataFrame(datedata).set_index("Tanggal")
+
+annotated_text(
+    (f"{newdata[0][0].strftime('%B %Y')}", ""),
+    " - ",
+    (f"{newdata[0][-1].strftime('%B %Y')}", ""),
+)
 
 
 # Fungsi pencarian berdasarkan harga

@@ -75,6 +75,7 @@ list_mape = mape[3]
 
 #! Tampilan ##############################################################
 
+
 # * Tautan ke halaman Himpunan Semesta
 
 if st.sidebar.button("Himpunan Semesta U"):

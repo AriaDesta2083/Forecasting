@@ -7,7 +7,14 @@ newdata = Filterdata(dataprepocessing, 0)
 
 start_date = newdata[0][0]
 tanggal_hari_ini = datetime.now()
-tanggal_besok = tanggal_hari_ini + timedelta(days=1)
+tanggal_besok = (
+    tanggal_hari_ini + timedelta(days=3)
+    if tanggal_hari_ini.weekday() == 4
+    else tanggal_hari_ini + timedelta(days=2)
+    if tanggal_hari_ini.weekday() == 5
+    else tanggal_hari_ini + timedelta(days=1)
+)
+print(tanggal_besok)
 end_date = tanggal_besok.strftime("%Y-%m-%d")
 hari = ["Senin", "Selasa", "Rabu", "Kamis", "Jumat", "Sabtu", "Minggu"]
 date_range = pd.date_range(start=start_date, end=end_date, freq="D")
@@ -97,7 +104,7 @@ def prediksi(harga, peramalan, jumlah_peramalan):
     databaru = [i for i in harga]
     for i in range(0, jumlah_peramalan):
         databaru.append(peramalan[-1])
-        # print(peramalan[-1])
+        print(peramalan[-1])
         # * SEMESTA U
         semesta = SemestaU(databaru)
         u = semesta[0]
@@ -152,6 +159,5 @@ new_tanggal = tanggal_peramalan
 new_harga = harga + [nan for i in range(0, jumlah_peramalan)]
 new_peramalan = peramalan + dataprediksi[0][len(harga) :]
 
-print(new_tanggal)
 # for i in range(len(new_tanggal)):
 #     print(new_tanggal[i], new_harga[i], new_peramalan[i])
