@@ -11,7 +11,13 @@ import pandas as pd
 import altair as alt
 
 st.set_page_config(
-    page_title="Hasil Peramalan", page_icon="images/unej.png", layout="wide"
+    page_title="Hasil Peramalan",
+    page_icon="images/unej.png",
+    layout="wide",
+    menu_items={
+        "report a bug": "https://www.instagram.com/ariadestap/ ",
+        "about": "GitHub : https://github.com/AriaDesta2083",
+    },
 )
 
 show_pages(
