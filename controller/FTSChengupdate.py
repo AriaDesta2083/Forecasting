@@ -1,84 +1,20 @@
-import csv
-from datetime import datetime
-from collections import defaultdict, Counter
+from collections import Counter
 import math
 import os
+from controller.prepocessing import *
 
 #! PEMBUATAN ALGORITMA FUZZY TIME SERIES CHENG
 
 
-def readcsv(filename):
-    with open(filename) as csvfile:
-        readCSV = csv.reader(csvfile, delimiter=";")
-        data = []
-        tanggal = []
-        for row in readCSV:
-            tanggal.append(row[1])
-            data.append(row[2])
-    return tanggal, data
-
-
-def Prepocessing(data):
-    str_tanggal = data[0][1:]
-    str_harga = data[1][1:]
-    ex_harga = [0]
-    for i in range(len(str_harga)):
-        if str_harga[i] == "-":
-            str_harga[i] = 0
-    tanggal = [datetime.strptime(x, "%d/%m/%Y") for x in str_tanggal]
-    harga = list(map(int, str_harga))
-    min_harga = min([x for x in harga if x not in ex_harga])
-    max_harga = max([x for x in harga if x not in ex_harga])
-    new_min_harga = round(min_harga, -2)
-    new_max_harga = round(max_harga / 100) * 100
-    hari = ["Senin", "Selasa", "Rabu", "Kamis", "Jumat", "Sabtu", "Minggu"]
-    for i in range(len(harga)):
-        if harga[i] == 0:
-            # *  SELEKSI preposessing data
-            if hari[tanggal[i].weekday()] in ["Sabtu", "Minggu"]:
-                harga[i] = 0
-                tanggal[i] = 0
-            # * NORMALISASI preposessing data
-            else:
-                pre = (harga[i - 1] - min_harga) / (max_harga - min_harga) * (
-                    new_max_harga - new_min_harga
-                ) + new_min_harga
-                harga[i] = int(round(pre))
-                # print('prrepocessing data : ',tanggal[i],harga[i])
-    tanggal = [x.date() for x in tanggal if x != 0]
-    harga = [x for x in harga if x != 0]
-    return tanggal, harga
-
-
-def Filterdata(data, x):
-    if x != 0:
-        tanggal = [i for i in data[0][x:]]
-        harga = [i for i in data[1][x:]]
-        return tanggal, harga
-    else:
-        tanggal = [i for i in data[0]]
-        harga = [i for i in data[1]]
-        return tanggal, harga
-
-
 def SemestaU(data):
-    x = 1000 * math.floor(min(data) / 1000)
-    d1 = abs(min(data) - x) + 1000
-    y = 1000 * math.ceil(max(data) / 1000)
-    d2 = abs(max(data) - y) + 1000
-    U = [min(data) - d1, max(data) + d2]
-    return U, d1, d2
+    d1, d2 = 500 * math.floor(min(data) / 500), 500 * math.ceil(max(data) / 500)
+    U = [d1 if d1 != min(data) else d1 - 500, d2 if d2 != max(data) else d2 + 500]
+    return U
 
 
 def Mean(harga):
-    selisih = []
-    for i in range(len(harga)):
-        if i == len(harga) - 1:
-            break
-        val = harga[i + 1] - harga[i]
-        selisih.append(abs(val))
-    mean = round(sum(selisih) / len(harga), 5)
-    return mean
+    selisih = [abs(harga[i + 1] - harga[i]) for i in range(len(harga) - 1)]
+    return round(sum(selisih) / len(harga), 5)
 
 
 def Interval(mean, u):
@@ -88,22 +24,14 @@ def Interval(mean, u):
 
 
 def HimpunanFuzzy(panjang_interval, jumlah_interval, u):
-    list_kelas = []
-    list_bawah = []
-    list_atas = []
-    list_tengah = []
     dict_nilai_tengah = {}
-    nilai = u[0]
-    for i in range(1, jumlah_interval + 1):
-        kelas = f"A{i}"
-        bawah = nilai
-        atas = nilai + panjang_interval
-        tengah = round((bawah + atas) / 2)
-        list_kelas.append(kelas)
-        list_bawah.append(bawah)
-        list_atas.append(atas)
-        list_tengah.append(tengah)
-        nilai = atas
+    list_kelas = [f"A{i}" for i in range(1, jumlah_interval + 1)]
+    list_bawah = [
+        round(u[0] + (i - 1) * panjang_interval, 5)
+        for i in range(1, jumlah_interval + 1)
+    ]
+    list_atas = [round(bawah + panjang_interval, 5) for bawah in list_bawah]
+    list_tengah = [(bawah + atas) // 2 for bawah, atas in zip(list_bawah, list_atas)]
     for i in range(1, len(list_kelas) + 1):
         dict_nilai_tengah[list_kelas[i - 1]] = list_tengah[i - 1]
     return list_kelas, list_bawah, list_atas, list_tengah, dict_nilai_tengah
@@ -120,18 +48,14 @@ def Fuzzifikasi(list_atas, list_kelas, harga):
 
 
 def FuzzyLogicRelationship(fuzzifikasi):
-    flr = []
-    for i in range(len(fuzzifikasi)):
-        if i == 0:
-            x = f" → {fuzzifikasi[i]}"
-            flr.append(x)
-        else:
-            y = f"{fuzzifikasi[i-1]} → {fuzzifikasi[i]}"
-            flr.append(y)
+    flr = [
+        f" → {fuzzifikasi[i]}" if i == 0 else f"{fuzzifikasi[i-1]} → {fuzzifikasi[i]}"
+        for i in range(len(fuzzifikasi))
+    ]
     return flr
 
 
-def FuzzyLogictRelationshipGroup(fuzzifikasi):
+def FuzzyLogicRelationshipGroup(fuzzifikasi):
     dictFLRG = {}
     for i in range(len(fuzzifikasi) - 1):
         grup = fuzzifikasi[i]
@@ -149,59 +73,34 @@ def Pembobotan(relasi):
     for i in relasi:
         element_count = Counter(i)
         linguistik = list(element_count.keys())
-        real = list(element_count.values())
-        x = [f"{linguistik[i]}  ({real[i]})" for i in range(len(linguistik))]
-        newflrg.append(x)
-        y = [round((x / sum(real)), 5) for x in real]
-        bobot.append(y)
-        z = [
-            [linguistik[i], round((real[i] / sum(real)), 5)]
-            for i in range(len(linguistik))
-        ]
-        map_bobot.append(z)
+        kemunculan = list(element_count.values())
+        x, y, z = (
+            [f"{linguistik[i]}  ({kemunculan[i]})" for i in range(len(linguistik))],
+            [round((x / sum(kemunculan)), 5) for x in kemunculan],
+            [
+                [linguistik[i], round((kemunculan[i] / sum(kemunculan)), 5)]
+                for i in range(len(linguistik))
+            ],
+        )
+        newflrg.append(x), bobot.append(y), map_bobot.append(z)
     return newflrg, bobot, map_bobot
 
 
-def Defuzzikasi(grup, map_bobot, dict_nilai_tengah):
-    dict_deffuzikasi = {}
-    list_deffuzikasi = []
+def Defuzzifikasi(grup, map_bobot, dict_nilai_tengah):
+    dict_defuzzifikasi = {}
+    list_defuzzifikasi = []
     for i in range(len(map_bobot)):
-        deffuz = [round(dict_nilai_tengah[i[0]] * i[1], 5) for i in map_bobot[i]]
-        list_deffuzikasi.append(deffuz)
-        dict_deffuzikasi[grup[i]] = round(sum(deffuz))
-    return dict_deffuzikasi, list_deffuzikasi
+        defuzz = [round(dict_nilai_tengah[i[0]] * i[1], 5) for i in map_bobot[i]]
+        list_defuzzifikasi.append(defuzz)
+        dict_defuzzifikasi[grup[i]] = round(sum(defuzz))
+    return dict_defuzzifikasi, list_defuzzifikasi
 
 
-def Peramalan(fuzzifikasi, dict_deffuzikasi, dict_nilai_tengah):
-    peramalan = []
-    rounded_data = []
-    for i in fuzzifikasi:
-        # print(i)
-        if i in dict_deffuzikasi:
-            peramalan.append(dict_deffuzikasi[i])
-        else:
-            print(
-                f"Kunci {i} tidak ditemukan jadi diambil nilai tengahnya",
-                dict_nilai_tengah[i],
-            )
-            peramalan.append(dict_nilai_tengah[i])
-            # Mencari kunci terdekat jika kunci tidak ditemukan
-            # i_number = int(i[1:])
-            # closest_key = min(
-            #     dict_deffuzikasi.keys(),
-            #     key=lambda x: abs(int(x[1:]) - i_number),
-            # )
-            # print(f"Kunci {i} tidak ditemukan, kunci terdekat adalah {closest_key}")
-            # peramalan.append(dict_deffuzikasi[closest_key])
-    # for x in peramalan:
-    #     last_two_digits = x % 100
-    #     if last_two_digits < 25:
-    #         rounded_value = x - last_two_digits
-    #     elif 25 < last_two_digits < 75:
-    #         rounded_value = x + (50 - last_two_digits)
-    #     else:
-    #         rounded_value = x + (100 - last_two_digits)
-    #     rounded_data.append(rounded_value)
+def Peramalan(fuzzifikasi, dict_defuzzifikasi, dict_nilai_tengah):
+    peramalan = [
+        dict_defuzzifikasi[i] if i in dict_defuzzifikasi else dict_nilai_tengah[i]
+        for i in fuzzifikasi
+    ]
     return peramalan
 
 
@@ -211,13 +110,6 @@ def Mape(harga, peramalan):
     list_mape = [round(list_didi[i] * 100, 2) for i in range(len(list_didi))]
     nilai_mape = round(sum(list_mape) / len(list_mape), 2)
     return nilai_mape, list_difi, list_didi, list_mape
-
-
-# * READ DATA
-readdata = readcsv("DATAGULANEW.csv")
-
-# * PREPOCESSING DATA
-dataprepocessing = Prepocessing(readdata)
 
 
 def tampilkan_menu():
@@ -245,21 +137,20 @@ def clear_console():
 
 if __name__ == "__main__":
     # * FILTER DATA
-    newdata = Filterdata(dataprepocessing, 0)
-    tanggal = newdata[0]
-    harga = newdata[1]
+    # for i in range(len(list(csv_data.keys()))):
+    #     print(f"{i+1}. {list(csv_data.keys())[i]}")
+    # wilayah = int(input("Masukkan nama wilayah: "))
+    data = return_data("Aceh")
+    newdata = prepocessing(data)
+    tanggal, harga = newdata[0], newdata[1]
     # * SEMESTA U
-    semesta = SemestaU(newdata[1])
-    u = semesta[0]
-    d1 = semesta[1]
-    d2 = semesta[2]
+    u = SemestaU(harga)
     # * MEAN
     mean = Mean(harga)
     # * INTERVAL
     interval = Interval(mean, u)
     panjang_interval = interval[0]
     jumlah_interval = interval[1]
-
     # * HIMPUNAN FUZZY
     himpunan_fuzzy = HimpunanFuzzy(panjang_interval, jumlah_interval, u)
     list_kelas = himpunan_fuzzy[0]
@@ -267,32 +158,25 @@ if __name__ == "__main__":
     list_atas = himpunan_fuzzy[2]
     list_tengah = himpunan_fuzzy[3]
     dict_nilai_tengah = himpunan_fuzzy[4]
-
     # * FUZZIFIKASI
     fuzzifikasi = Fuzzifikasi(list_atas, list_kelas, harga)
-
     # * FUZZY LOGIC RELATIONSHIP
     flr = FuzzyLogicRelationship(fuzzifikasi)
-
     # * FUZZY LOGIC RELATIONSHIP GROUP
-    flrg = FuzzyLogictRelationshipGroup(fuzzifikasi)
+    flrg = FuzzyLogicRelationshipGroup(fuzzifikasi)
     grup = list(flrg.keys())
     relasi = list(flrg.values())
-
     # * PEMBOBOTAN
     pembobotan = Pembobotan(relasi)
     newflrg = pembobotan[0]
     bobot = pembobotan[1]
     map_bobot = pembobotan[2]
-
     # * DEFUZZIFIKASI
-    defuzzikasi = Defuzzikasi(grup, map_bobot, dict_nilai_tengah)
-    dict_deffuzikasi = defuzzikasi[0]
-    list_deffuzikasi = defuzzikasi[1]
-
+    defuzzifikasi = Defuzzifikasi(grup, map_bobot, dict_nilai_tengah)
+    dict_defuzzifikasi = defuzzifikasi[0]
+    list_defuzzifikasi = defuzzifikasi[1]
     # * PERAMALAN
-    peramalan = Peramalan(fuzzifikasi, dict_deffuzikasi, dict_nilai_tengah)
-
+    peramalan = Peramalan(fuzzifikasi, dict_defuzzifikasi, dict_nilai_tengah)
     # * MAPE
     mape = Mape(harga, peramalan)
     nilai_mape = mape[0]
@@ -304,8 +188,6 @@ if __name__ == "__main__":
         tanggal,
         harga,
         u,
-        d1,
-        d2,
         panjang_interval,
         jumlah_interval,
         list_kelas,
@@ -319,8 +201,8 @@ if __name__ == "__main__":
         newflrg,
         bobot,
         map_bobot,
-        dict_deffuzikasi,
-        list_deffuzikasi,
+        dict_defuzzifikasi,
+        list_defuzzifikasi,
         peramalan,
         nilai_mape,
         list_difi,
@@ -356,8 +238,8 @@ if __name__ == "__main__":
                 print(" |  Semesta U | ")
                 print(f"dmin\t : {min(harga)}")
                 print(f"dmax\t : {max(harga)}")
-                print(f"d1\t : {d1}")
-                print(f"d2\t : {d2}")
+                print(f"d1\t : {min(harga)-u[0]}")
+                print(f"d2\t : {u[1]-max(harga)}")
                 print()
                 print(f"semesata u\t : {u}")
                 print()
@@ -378,6 +260,7 @@ if __name__ == "__main__":
                 clear_console()
                 print(" |  Himpunan Fuzzy | ")
                 print(f" Kelas | Batas Atas | Batas Bawah | Nilai Tengah")
+
                 for i in range(len(list_kelas)):
                     print(
                         f" {list_kelas[i]}\t| {round(list_atas[i])} | {round(list_bawah[i])} | {round(list_tengah[i])}"
@@ -392,7 +275,7 @@ if __name__ == "__main__":
                 print(" |  Fuzzifikasi | ")
                 print()
                 for i in range(0, len(harga), 3):
-                    print(f"|{tanggal[i]} | {harga[i]} | {fuzzifikasi[i]} |")
+                    print(f"|{tanggal[i]}|{harga[i]}|{fuzzifikasi[i]}|")
                 print()
                 input("Tekan Enter untuk kembali ke menu...")
 
@@ -402,7 +285,8 @@ if __name__ == "__main__":
                 print(" |  FLR | ")
                 print()
                 for i in range(len(harga)):
-                    print(f"| {tanggal[i]} | {harga[i]} | {flr[i]}\t|")
+                    print(i)
+                    print(f"|{tanggal[i]}|{harga[i]}|{flr[i]}|")
                 print()
 
                 input("Tekan Enter untuk kembali ke menu...")
@@ -412,7 +296,8 @@ if __name__ == "__main__":
                 print(" |  FLRG | ")
                 print()
                 for i in range(len(grup)):
-                    print(f"{grup[i]}\n\t{newflrg[i]}\n\t{relasi[i]}")
+                    print(i + 1)
+                    print(f"{grup[i]}|{relasi[i]}")
                 print()
                 input("Tekan Enter untuk kembali ke menu...")
 
@@ -422,8 +307,12 @@ if __name__ == "__main__":
                 print(" |  Pembobotan | ")
                 print()
                 for i in range(len(bobot)):
-                    print(f"{grup[i]}\n\t{newflrg[i]}\n\t{relasi[i]}\n\t{bobot[i]}")
+                    if i < 6 or i > len(bobot) - 6:
+                        print(f"{grup[i]}|{newflrg[i]}|{bobot[i]}")
+                    else:
+                        pass
                 print()
+
                 print()
                 input("Tekan Enter untuk kembali ke menu...")
 
@@ -433,9 +322,14 @@ if __name__ == "__main__":
                 print(" |  Defuzifikasi | ")
                 print()
                 for i in range(len(grup)):
-                    print(
-                        f"{grup[i]}\n\t{newflrg[i]}\n\t{bobot[i]}\n\t{list_deffuzikasi[i]}"
-                    )
+                    if i < 6 or i > len(grup) - 6:
+                        print(f"{grup[i]}")
+                        for z in map_bobot[i]:
+                            print(f"{z[0]}({z[1]})", end=" , ")
+                        print()
+                        print(f"{list_defuzzifikasi[i]}")
+                    else:
+                        pass
                 input("Tekan Enter untuk kembali ke menu...")
 
             elif pilihan == "10":
@@ -443,7 +337,10 @@ if __name__ == "__main__":
                 clear_console()
                 print(" |  Peramalan | ")
                 for i in range(len(a)):
-                    print(f"| {a[i]} | {b[i]} | {c[i]}\t| {d[i]}|")
+                    if i < 6 or i > len(a) - 6:
+                        print(f"xx {a[i]}\n yy {b[i]}\n zz {c[i]}\n uu {d[i]}\n")
+                    else:
+                        pass
                 print("hasil peramalan  ")
                 input("Tekan Enter untuk kembali ke menu...")
 
@@ -469,8 +366,6 @@ if __name__ == "__main__":
         tanggal,
         harga,
         u,
-        d1,
-        d2,
         panjang_interval,
         jumlah_interval,
         list_kelas,
@@ -484,8 +379,8 @@ if __name__ == "__main__":
         newflrg,
         bobot,
         map_bobot,
-        dict_deffuzikasi,
-        list_deffuzikasi,
+        dict_defuzzifikasi,
+        list_defuzzifikasi,
         peramalan,
         nilai_mape,
         list_difi,
@@ -493,23 +388,22 @@ if __name__ == "__main__":
         list_mape,
     )
 
-
 #! FIX
 #! fitur
-# readcsv
-# Prepocessing
-# Filterdata
-# SemestaU
-# Mean
-# Interval
-# HimpunanFuzzy
-# Fuzzifikasi
-# FuzzyLogicRelationship
-# FuzzyLogictRelationshipGroup
-# Pembobotan
-# Defuzzikasi
-# Peramalan
-# Mape
-# tampilkan_menu
-# clear_console
-# main
+# readcsv -> done
+# Prepocessing -> done
+# Filterdata -> done
+# SemestaU -> done
+# Mean -> done
+# Interval -> done
+# HimpunanFuzzy -> done
+# Fuzzifikasi -> done
+# FuzzyLogicRelationship -> done
+# FuzzyLogicRelationshipGroup -> done
+# Pembobotan -> done
+# Defuzzifikasi -> done
+# Peramalan -> done
+# Mape -> done
+# tampilkan_menu -> done
+# clear_console -> done
+# main -> done
