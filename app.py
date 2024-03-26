@@ -1,5 +1,14 @@
 import streamlit as st
 from st_pages import Page, Section, add_page_title, show_pages
+from annotated_text import annotated_text
+from controller.readdata import csv_data
+from controller.prepocessing import return_data
+from controller.build import build_forecast, prediksi
+from datetime import datetime, timedelta
+import locale
+import time
+import pandas as pd
+import altair as alt
 
 st.set_page_config(
     page_title="Hasil Peramalan", page_icon="images/unej.png", layout="wide"
@@ -11,16 +20,6 @@ show_pages(
         Page("pages/Analisa.py", "Analisa Peramalan", "📚"),
     ]
 )
-
-from annotated_text import annotated_text
-from controller.readdata import csv_data
-from controller.prepocessing import return_data
-from controller.build import build_forecast, prediksi
-from datetime import datetime, timedelta
-import locale
-import time
-import pandas as pd
-import altair as alt
 
 
 wilayah = st.sidebar.selectbox(

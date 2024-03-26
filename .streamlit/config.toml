@@ -8,6 +8,3 @@ textColor="#e7f6f2"
 
 [deprecation]
 showPyplotGlobalUse = false
-
-[client]
-showSidebarNavigation = false
