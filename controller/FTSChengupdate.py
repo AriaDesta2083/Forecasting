@@ -58,8 +58,7 @@ def FuzzyLogicRelationship(fuzzifikasi):
 def FuzzyLogicRelationshipGroup(fuzzifikasi):
     dictFLRG = {}
     for i in range(len(fuzzifikasi) - 1):
-        grup = fuzzifikasi[i]
-        relasi = fuzzifikasi[i + 1]
+        grup, relasi = fuzzifikasi[i], fuzzifikasi[i + 1]
         if grup not in dictFLRG:
             dictFLRG[grup] = []
         dictFLRG[grup].append(relasi)
@@ -67,28 +66,22 @@ def FuzzyLogicRelationshipGroup(fuzzifikasi):
 
 
 def Pembobotan(relasi):
-    newflrg = []
-    bobot = []
-    map_bobot = []
+    newflrg, bobot, map_bobot = [], [], []
     for i in relasi:
-        element_count = Counter(i)
-        linguistik = list(element_count.keys())
-        kemunculan = list(element_count.values())
-        x, y, z = (
-            [f"{linguistik[i]}  ({kemunculan[i]})" for i in range(len(linguistik))],
-            [round((x / sum(kemunculan)), 5) for x in kemunculan],
-            [
-                [linguistik[i], round((kemunculan[i] / sum(kemunculan)), 5)]
-                for i in range(len(linguistik))
-            ],
-        )
+        count = Counter(i)
+        linguistik, kemunculan = list(count.keys()), list(count.values())
+        x = [f"{linguistik[i]}  ({kemunculan[i]})" for i in range(len(linguistik))]
+        y = [round((x / sum(kemunculan)), 5) for x in kemunculan]
+        z = [
+            [linguistik[i], round((kemunculan[i] / sum(kemunculan)), 5)]
+            for i in range(len(linguistik))
+        ]
         newflrg.append(x), bobot.append(y), map_bobot.append(z)
     return newflrg, bobot, map_bobot
 
 
 def Defuzzifikasi(grup, map_bobot, dict_nilai_tengah):
-    dict_defuzzifikasi = {}
-    list_defuzzifikasi = []
+    dict_defuzzifikasi, list_defuzzifikasi = {}, []
     for i in range(len(map_bobot)):
         defuzz = [round(dict_nilai_tengah[i[0]] * i[1], 5) for i in map_bobot[i]]
         list_defuzzifikasi.append(defuzz)
@@ -136,6 +129,7 @@ def clear_console():
 
 
 if __name__ == "__main__":
+
     # * FILTER DATA
     # for i in range(len(list(csv_data.keys()))):
     #     print(f"{i+1}. {list(csv_data.keys())[i]}")

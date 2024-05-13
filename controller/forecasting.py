@@ -38,7 +38,7 @@ if __name__ == "__main__":
     # for i in csv_data.keys():
     forecast = Forecasting(return_data("Jawa Timur"))
     # print(forecast.nilai_mape)
-    # # print(forecast.mean)
+    # print(forecast.mean)
     # # print(forecast.panjang_interval)
     # for i in range(len(forecast.defuzzifikasi)):
     for i in range(len(forecast.grup)):

@@ -38,6 +38,8 @@ wilayah = st.sidebar.selectbox(
 tanggal_peramalan, jumlah_peramalan, z = build_forecast(return_data(wilayah))
 az = prediksi(z.harga, tanggal_peramalan, jumlah_peramalan)
 
+harga, tanggal = az.harga[:-60], az.tanggal[:-60]
+peramalan = az.peramalan[:-60]
 
 st.header("Peramalan Harga Gula Pasir Lokal Tradisional Di Pasar Tradisional Indonesia")
 
@@ -48,7 +50,7 @@ tab1, tab2 = st.tabs(["💵 HASIL PERAMALAN", "📈 GRAFIK PERAMALAN"])
 with tab1:
     annotated_text(
         "Hasil peramalan harga ",
-        ("gula pasir lokal 💵 ", "", "color:#8B6;border:2px dashed #8B6"),
+        ("gula pasir lokal 💵 ", " per kilogram ", "color:#8B6;border:2px dashed #8B6"),
         " di pasar tradisional ",
         (f"{wilayah.upper()} 📍 ", "", "color:#fea;border:2px dashed #fea"),
     )
@@ -56,9 +58,9 @@ with tab1:
     # Atur locale ke Indonesia
     locale.setlocale(locale.LC_ALL, "id_ID")
 
-    kemarin = datetime.strptime(az.tanggal[-3], "%Y-%m-%d")
-    hari_ini = datetime.strptime(az.tanggal[-2], "%Y-%m-%d")
-    besok = datetime.strptime(az.tanggal[-1], "%Y-%m-%d")
+    kemarin = datetime.strptime(tanggal[-3], "%Y-%m-%d")
+    hari_ini = datetime.strptime(tanggal[-2], "%Y-%m-%d")
+    besok = datetime.strptime(tanggal[-1], "%Y-%m-%d")
 
     st.markdown(
         """
@@ -84,22 +86,25 @@ with tab1:
         )
         col1.metric(
             f"{kemarin.strftime('%A, %d %b %Y')} ",
-            f"{locale.currency(az.peramalan[-3], grouping=True)}",
-            f"{az.peramalan[-3] - az.peramalan[-4]}",
+            f"{locale.currency(peramalan[-3], grouping=True)}",
+            f"{peramalan[-3] - peramalan[-4]}",
         )
 
         col2.code("Hari ini", language="python")
         col2.metric(
             f"{hari_ini.strftime('%A, %d %b %Y')}",
-            f"{locale.currency(az.peramalan[-2], grouping=True)}",
-            f"{az.peramalan[-2] - az.peramalan[-3]}",
+            f"{locale.currency(peramalan[-2], grouping=True)}",
+            f"{peramalan[-2] - peramalan[-3]}",
         )
 
         col3.code("Besok", language="python")
         col3.metric(
             f"{besok.strftime('%A, %d %b %Y')}",
-            f"{locale.currency(az.peramalan[-1], grouping=True)}",
-            f"{az.peramalan[-1] - az.peramalan[-2]}",
+            f"{locale.currency(peramalan[-1], grouping=True)}",
+            f"{peramalan[-1] - peramalan[-2]}",
+        )
+        st.caption(
+            f"Note : Harga gula diatas merupakan hasil peramalan harga per kilogram jenis gula pasir lokal di pasar tradisional di {wilayah}."
         )
 
 st.write()
@@ -127,17 +132,17 @@ with tab2:
     with sl.container():
         val = st.slider(
             "📅 Rentang grafik :",
-            datetime.strptime(az.tanggal[1], "%Y-%m-%d").date(),
-            datetime.strptime(az.tanggal[-1], "%Y-%m-%d").date(),
+            datetime.strptime(tanggal[1], "%Y-%m-%d").date(),
+            datetime.strptime(tanggal[-1], "%Y-%m-%d").date(),
             (
-                datetime.strptime(az.tanggal[-200], "%Y-%m-%d").date(),
-                datetime.strptime(az.tanggal[-1], "%Y-%m-%d").date(),
+                datetime.strptime(tanggal[-200], "%Y-%m-%d").date(),
+                datetime.strptime(tanggal[-1], "%Y-%m-%d").date(),
             ),
             format="MMM DD, YYYY",
         )
         values = (
-            indextodate(val[0], az.tanggal),
-            indextodate(val[1], az.tanggal),
+            indextodate(val[0], tanggal),
+            indextodate(val[1], tanggal),
         )
 
     with txt.container():
@@ -148,21 +153,21 @@ with tab2:
         )
         annotated_text(
             (
-                f"{datetime.strptime(az.tanggal[values[0]], '%Y-%m-%d').strftime('%d %B %Y')}",
+                f"{datetime.strptime(tanggal[values[0]], '%Y-%m-%d').strftime('%d %B %Y')}",
                 "",
             ),
             " - ",
             (
-                f"{datetime.strptime(az.tanggal[values[1]],'%Y-%m-%d').strftime('%d %B %Y')}",
+                f"{datetime.strptime(tanggal[values[1]],'%Y-%m-%d').strftime('%d %B %Y')}",
                 "",
             ),
         )
 
     source = pd.DataFrame(
         {
-            "Tanggal": az.tanggal[values[0] : values[1] + 1],
-            "Harga": az.harga[values[0] : values[1] + 1],
-            "Peramalan": az.peramalan[values[0] : values[1] + 1],
+            "Tanggal": tanggal[values[0] : values[1] + 1],
+            "Harga": harga[values[0] : values[1] + 1],
+            "Peramalan": peramalan[values[0] : values[1] + 1],
         }
     )
 
