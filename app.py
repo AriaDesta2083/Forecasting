@@ -38,8 +38,8 @@ wilayah = st.sidebar.selectbox(
 tanggal_peramalan, jumlah_peramalan, z = build_forecast(return_data(wilayah))
 az = prediksi(z.harga, tanggal_peramalan, jumlah_peramalan)
 
-harga, tanggal = az.harga[:-60], az.tanggal[:-60]
-peramalan = az.peramalan[:-60]
+harga, tanggal = az.harga, az.tanggal
+peramalan = az.peramalan
 
 st.header("Peramalan Harga Gula Pasir Lokal Tradisional Di Pasar Tradisional Indonesia")
 
