@@ -1,19 +1,37 @@
 from datetime import datetime
 import math
-from controller.readdata import *
 
 #! ENCODING DATA
 
 
 def prepocessing(data):
+    print()
+    print("| PREPOCESSING |")
+    print()
+    print("| ENCODING |")
     encoddata = encoding_data(data)
+    print("| ENCODING SUCCESS |")
+    print()
+    print("| MISSING VALUE |")
     missingvalue = missing_value(encoddata)
+    print("| MISSING VALUE SUCCESS |")
+    print()
+    print("| OUTLIER | ")
+    print()
     outlier = data_outlier(missingvalue)
+    print()
+    print("| OUTLIER SUCCESS |")
+    print()
+    print("| PREPOCESSING SUCCESS |")
+    print()
     return outlier
 
 
 def encoding_data(data):
-    tanggal, harga = data[0][1:], data[1][1:]
+    tanggal, harga = data[0], data[1]
+    print("len(tanggal) ", len(tanggal))
+    print("len(harga) ", len(harga))
+    print(f"type awal | tanggal : {type(tanggal[1])} | harga : {type(harga[1])} |")
     for i in range(len(harga)):
         if harga[i] == "-":
             harga[i] = math.nan
@@ -26,14 +44,29 @@ def encoding_data(data):
         )
         for nilai in harga
     ]
-    # print(f" - tanggal : {type(new_tanggal[0])} | harga : {type(new_harga[0])}")
+    a = list(
+        {
+            (
+                str(type(x))
+                if not (isinstance(x, float) and math.isnan(x))
+                else "<class 'math.nan'>"
+            )
+            for x in new_harga
+        }
+    )
+    print(
+        f"type akhir | tanggal : {list({str(type(x)) for x in new_tanggal})} | harga : {a} |"
+    )
+    print()
     return new_tanggal, new_harga
 
 
 #! MISSING VALUE
 def missing_value(data):
     pre_tanggal = mv_tanggal(tanggal=data[0], harga=data[1])
+    print()
     pre_harga = mv_harga(tanggal=pre_tanggal[0], harga=pre_tanggal[1])
+    print()
     tanggal, harga = pre_tanggal[0], pre_harga
     return tanggal, harga
 
@@ -45,11 +78,9 @@ def mv_tanggal(tanggal, harga):
     for t in tanggal:
         dictHari[hari[t.weekday()]] += 1
     for h, c in dictHari.items():
-        # print(f"{h} : {c}", end=" | ")
-        # print()
-        pass
+        print(f"{h} : {c}", end=" ")
     if dictHari["Sabtu"] == 0 and dictHari["Minggu"] == 0:
-        # print(f" - penghapusan missing value : {len(count)}")
+        print(f"mv tanggal : {len(count)}")
         return tanggal, harga
     else:
         for i in range(len(tanggal)):
@@ -57,7 +88,7 @@ def mv_tanggal(tanggal, harga):
                 del tanggal[i]
                 del harga[i]
                 count.append((tanggal[i], harga[i]))
-        # print(f" - penghapusan missing value : {len(count)}")
+        print(f"mv tanggal : {len(count)}")
         return tanggal, harga
 
 
@@ -65,23 +96,24 @@ def mv_harga(tanggal, harga):
     count = []
     for i in range(len(harga)):
         if math.isnan(harga[i]):
+            print("nm ", tanggal[i], harga[i], end=" >> ")
             harga[i] = normalisasi_minmax(
                 dbf=harga[i - 1],
                 dmin=min(harga),
                 dmax=max(harga),
             )
             count.append((tanggal[i], harga[i]))
-    # print(f" - pengisian missing value : {len(count)}")
+    print()
+    print(f"mv harga : {len(count)}")
     return harga
 
 
 def normalisasi_minmax(dbf, dmin, dmax):
-    d1 = 500 * math.floor(dmin / 500)
-    d2 = 500 * math.ceil(dmax / 500)
-    new_dmin = d1 if d1 != dmin else d1 - 500
-    new_dmax = d2 if d2 != dmax else d2 + 500
+    d1, d2 = 500 * math.floor(dmin / 500), 500 * math.ceil(dmax / 500)
+    new_dmin, new_dmax = d1 if d1 != dmin else d1 - 500, d2 if d2 != dmax else d2 + 500
     pre = (dbf - dmin) / (dmax - dmin) * (new_dmax - new_dmin) + new_dmin
     hasil = int(round(pre))
+    print(hasil, end=" , ")
     return hasil
 
 
@@ -93,27 +125,28 @@ def data_outlier(data):
     iqr = q3 - q1
     min_iqr = q1 - (1.5 * iqr)
     max_iqr = q3 + (1.5 * iqr)
-    data_outlier = []
+    count = []
     for i in range(len(harga)):
         if harga[i] < min_iqr or harga[i] > max_iqr:
-            data_outlier.append((tanggal[i], harga[i]))
+            count.append((tanggal[i], harga[i]))
+            print("nm ", tanggal[i], harga[i], end=" >> ")
             harga[i] = normalisasi_minmax(
                 dbf=harga[i - 1],
                 dmin=min_iqr,
                 dmax=max_iqr,
             )
-    # print(f" - penanganan outlier : {len(data_outlier)}")
+    print(f"outlier : {len(count)}")
     return data
 
 
-def return_data(data):
-    readdata = read_data(data)
-    prepocessingdata = prepocessing(readdata)
-    return prepocessingdata
+# def return_data(data):
+#     readdata = read_data(data)
+#     prepocessingdata = prepocessing(readdata)
+#     return prepocessingdata
 
 
-if __name__ == "__main__":
-    for i in csv_data.keys():
-        print(i.upper())
-        readdata = read_data(i)
-        prepocessingdata = prepocessing(readdata)
+# if __name__ == "__main__":
+#     for i in csv_data.keys():
+#         print(i.upper())
+#         readdata = read_data(i)
+#         prepocessingdata = prepocessing(readdata)

@@ -1,12 +1,14 @@
-from datetime import datetime, timedelta
+from datetime import date, datetime, timedelta
 import pandas as pd
 import streamlit as st
+from controller.api import get_api, get_list_wilayah
+from controller.build import build_forecast
 from controller.forecasting import Forecasting
-from controller.readdata import csv_data, read_data
-from controller.prepocessing import return_data
 from annotated_text import annotated_text, annotation
 import altair as alt
 import time
+
+from controller.prepocessing import prepocessing
 
 #! title
 st.set_page_config(
@@ -23,11 +25,20 @@ st.header(
 #!side bar
 
 
-wilayah = st.sidebar.selectbox(
+# #! import data with data api
+
+prov_dict = get_list_wilayah()
+prov = st.sidebar.selectbox(
     "🌏 Pilih Wilayah",
-    (i for i in list(csv_data.keys())),
+    (i for i in ["Indonesia"] + list(prov_dict.keys())),
 )
-prepo = return_data(wilayah)
+
+id_prov = prov_dict.get(prov)
+# end_date = date(2024, 4, 4)
+end_date = date.today()
+d, t, h = get_api(
+    id_prov if id_prov else "", end_date, end_date - timedelta(days=360 * 3)
+)
 
 
 #! tabs
@@ -38,10 +49,11 @@ tab1, tab2, tab3 = st.tabs(["📰 DATA AKTUAL", "📈 GRAFIK DATA", "⭐FTS CHEN
 #! tab1 Data Aktual
 
 with tab1:
-    newdata = prepo
-    readdata = read_data(wilayah)[1][1:]
+    wilayah = prov
+    readdata = (t, h)
+    newdata = prepocessing((t, h))
     dataaktual = [
-        newdata[1][i] if str(newdata[1][i]) != str(readdata[i]) else "-"
+        str(newdata[1][i]) if str(newdata[1][i]) != str(readdata[1][i]) else None
         for i in range(len(newdata[1]))
     ]
     st.subheader("📰 Data Aktual")
@@ -52,7 +64,7 @@ with tab1:
     )
     datedata = {
         "Tanggal": newdata[0],
-        "Harga": readdata,
+        "Harga": readdata[1],
         "Prepocessing": dataaktual,
     }
     df = pd.DataFrame(datedata).set_index("Tanggal")
@@ -75,7 +87,6 @@ def indextodate(date, tanggal):
         date = date + timedelta(days=2)
     else:
         date = date
-    date = date.strftime("%Y-%m-%d")
     for i in range(len(tanggal)):
         if date == tanggal[i]:
             print(date, tanggal[i])
@@ -83,18 +94,17 @@ def indextodate(date, tanggal):
 
 
 with tab2:
-    tanggal, harga = prepo
-    tanggal = [i.strftime("%Y-%m-%d") for i in tanggal]
+    tanggal, harga = newdata
     st.subheader("📈 Grafik Data")
     (txt, spc2, sl, spc3) = st.columns([3, 0.1, 4, 0.5])
     with sl.container():
         val = st.slider(
-            "Rentang grafik:",
-            datetime.strptime(tanggal[1], "%Y-%m-%d").date(),
-            datetime.strptime(tanggal[-1], "%Y-%m-%d").date(),
+            "📅 Rentang grafik :",
+            tanggal[1],
+            tanggal[-1],
             (
-                datetime.strptime(tanggal[-200], "%Y-%m-%d").date(),
-                datetime.strptime(tanggal[-1], "%Y-%m-%d").date(),
+                tanggal[-180],
+                tanggal[-1],
             ),
             format="MMM DD, YYYY",
         )
@@ -111,12 +121,12 @@ with tab2:
         )
         annotated_text(
             (
-                f"{datetime.strptime(tanggal[values[0]], '%Y-%m-%d').strftime('%d %B %Y')}",
+                f"{tanggal[values[0]]}",
                 "",
             ),
             " - ",
             (
-                f"{datetime.strptime(tanggal[values[1]],'%Y-%m-%d').strftime('%d %B %Y')}",
+                f"{tanggal[values[1]]}",
                 "",
             ),
         )
@@ -408,7 +418,11 @@ def ftscheng(z, tahap):
             ("variabel fuzzy", "linguistik"),
             " dari setiap interval yang telah diperoleh. ",
         )
-        df_flr = {"Tanggal": z.tanggal, "Harga": z.harga, "Fuzzifikasi": z.fuzzifikasi}
+        df_flr = {
+            "Tanggal": z.tanggal,
+            "Harga": [str(i) for i in z.harga],
+            "Fuzzifikasi": z.fuzzifikasi,
+        }
         df = pd.DataFrame(df_flr).set_index("Tanggal")
         st.dataframe(df, height=500, use_container_width=True)
 
@@ -433,7 +447,7 @@ def ftscheng(z, tahap):
         )
         showflr = {
             "Tanggal": z.tanggal,
-            "Fuzzifikasi": z.fuzzifikasi,
+            "Harga": [str(i) for i in z.harga],
             "FLR (Ai → Aj)": z.flr,
         }
         df = pd.DataFrame(showflr).set_index("Tanggal")
@@ -512,8 +526,11 @@ def ftscheng(z, tahap):
 
         dictDeffuzikasi = {
             "Grup": z.grup,
+            "Relasi(bobot)": [
+                [f"{item[0]}({item[1]})" for item in i] for i in z.map_bobot
+            ],
             "Deffuzikasi": z.list_defuzzifikasi,
-            "Hasil": z.dict_defuzzifikasi.values(),
+            "Hasil": [str(i) for i in z.dict_defuzzifikasi.values()],
         }
         df = pd.DataFrame(dictDeffuzikasi).set_index("Grup")
         st.dataframe(df, height=500, use_container_width=True)
@@ -588,6 +605,7 @@ with tab3:
             "Himpunan Semesta U",
             "Interval Average",
             "Himpunan Fuzzy",
+            "Fuzzifikasi",
             "Fuzzy Logic Relationship",
             "FLR Group",
             "Pembobotan",
@@ -598,5 +616,5 @@ with tab3:
     )
     with st.spinner("Wait for it..."):
         time.sleep(1)
-        z = Forecasting(prepo)
+        z = Forecasting(newdata)
         ftscheng(z, tahap)

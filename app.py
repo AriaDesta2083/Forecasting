@@ -1,10 +1,11 @@
 import streamlit as st
-from st_pages import Page, Section, add_page_title, show_pages
+from st_pages import Page, show_pages
 from annotated_text import annotated_text
-from controller.readdata import csv_data
-from controller.prepocessing import return_data
-from controller.build import build_forecast, prediksi
-from datetime import datetime, timedelta
+from controller.forecasting import Forecasting
+from controller.prepocessing import *
+from controller.api import *
+from controller.build import build_forecast
+from datetime import date, datetime, timedelta
 import locale
 import time
 import pandas as pd
@@ -28,25 +29,32 @@ show_pages(
 )
 
 
-wilayah = st.sidebar.selectbox(
-    "🌏 Pilih Wilayah",
-    (i for i in list(csv_data.keys())),
-)
-
-#! import data
-
-tanggal_peramalan, jumlah_peramalan, z = build_forecast(return_data(wilayah))
-az = prediksi(z.harga, tanggal_peramalan, jumlah_peramalan)
-
-harga, tanggal = az.harga[:-60], az.tanggal[:-60]
-peramalan = az.peramalan[:-60]
-
 st.header("Peramalan Harga Gula Pasir Lokal Tradisional Di Pasar Tradisional Indonesia")
 
 tab1, tab2 = st.tabs(["💵 HASIL PERAMALAN", "📈 GRAFIK PERAMALAN"])
 
+# #! import data with data api
+# end_date = date(2024, 4, 4)
+end_date = date.today()
+start_date = end_date - timedelta(days=360 * 3)
+prov_dict = get_list_wilayah()
+list_prov = ["Indonesia"] + list(prov_dict.keys())
+prov = st.sidebar.selectbox(
+    "🌏 Pilih Wilayah",
+    (i for i in list_prov),
+)
+id_prov = prov_dict.get(prov)
+data, tanggal, harga = get_api(id_prov if id_prov else "", end_date, start_date)
+
+
+#! melakukan peramalan
+
+z = Forecasting(prepocessing((tanggal, harga)))
+tanggal, harga, peramalan = build_forecast(z)
+
 
 #! HASIL PERAMALAN !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+wilayah = prov
 with tab1:
     annotated_text(
         "Hasil peramalan harga ",
@@ -58,9 +66,13 @@ with tab1:
     # Atur locale ke Indonesia
     locale.setlocale(locale.LC_ALL, "id_ID")
 
-    kemarin = datetime.strptime(tanggal[-3], "%Y-%m-%d")
-    hari_ini = datetime.strptime(tanggal[-2], "%Y-%m-%d")
-    besok = datetime.strptime(tanggal[-1], "%Y-%m-%d")
+    index = -2
+    # kemarin = datetime.strptime(str(tanggal[index - 1]), "%Y-%m-%d")
+    # hari_ini = datetime.strptime(str(tanggal[index]), "%Y-%m-%d")
+    # besok = datetime.strptime(str(tanggal[index + 1]), "%Y-%m-%d")
+    kemarin = tanggal[index - 1]
+    hari_ini = tanggal[index]
+    besok = tanggal[index + 1]
 
     st.markdown(
         """
@@ -86,22 +98,22 @@ with tab1:
         )
         col1.metric(
             f"{kemarin.strftime('%A, %d %b %Y')} ",
-            f"{locale.currency(peramalan[-3], grouping=True)}",
-            f"{peramalan[-3] - peramalan[-4]}",
+            f"{locale.currency(harga[index-1], grouping=True)}",
+            f"{harga[index-1] - harga[index-2]}",
         )
 
         col2.code("Hari ini", language="python")
         col2.metric(
             f"{hari_ini.strftime('%A, %d %b %Y')}",
-            f"{locale.currency(peramalan[-2], grouping=True)}",
-            f"{peramalan[-2] - peramalan[-3]}",
+            f"{locale.currency(harga[index], grouping=True)}",
+            f"{harga[index] - harga[index-1]}",
         )
 
         col3.code("Besok", language="python")
         col3.metric(
             f"{besok.strftime('%A, %d %b %Y')}",
-            f"{locale.currency(peramalan[-1], grouping=True)}",
-            f"{peramalan[-1] - peramalan[-2]}",
+            f"{locale.currency(peramalan[index+1], grouping=True)}",
+            f"{peramalan[index+1] - harga[index]}",
         )
         st.caption(
             f"Note : Harga gula diatas merupakan hasil peramalan harga per kilogram jenis gula pasir lokal di pasar tradisional di {wilayah}."
@@ -120,10 +132,8 @@ def indextodate(date, tanggal):
         date = date + timedelta(days=2)
     else:
         date = date
-    date = date.strftime("%Y-%m-%d")
     for i in range(len(tanggal)):
         if date == tanggal[i]:
-            print(date, tanggal[i])
             return i
 
 
@@ -132,11 +142,11 @@ with tab2:
     with sl.container():
         val = st.slider(
             "📅 Rentang grafik :",
-            datetime.strptime(tanggal[1], "%Y-%m-%d").date(),
-            datetime.strptime(tanggal[-1], "%Y-%m-%d").date(),
+            tanggal[1],
+            tanggal[-1],
             (
-                datetime.strptime(tanggal[-200], "%Y-%m-%d").date(),
-                datetime.strptime(tanggal[-1], "%Y-%m-%d").date(),
+                tanggal[-200],
+                tanggal[-1],
             ),
             format="MMM DD, YYYY",
         )
@@ -153,12 +163,12 @@ with tab2:
         )
         annotated_text(
             (
-                f"{datetime.strptime(tanggal[values[0]], '%Y-%m-%d').strftime('%d %B %Y')}",
+                f"{tanggal[values[0]]}",
                 "",
             ),
             " - ",
             (
-                f"{datetime.strptime(tanggal[values[1]],'%Y-%m-%d').strftime('%d %B %Y')}",
+                f"{tanggal[values[1]]}",
                 "",
             ),
         )
@@ -222,8 +232,7 @@ with tab2:
 
     # Draw text labels near the points, and highlight based on selection
     text = line.mark_text(align="right", dx=5, dy=-5).encode(
-        text=alt.condition(nearest, "Value:Q", alt.value(" ")),
-        color=alt.value("white"),
+        text=alt.condition(nearest, "Value:Q", alt.value("")),
         size=alt.value(15),
     )
 

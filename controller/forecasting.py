@@ -1,5 +1,3 @@
-from controller.readdata import *
-from controller.prepocessing import return_data
 from controller.FTSChengupdate import *
 
 
@@ -34,17 +32,17 @@ class Forecasting:
         )
 
 
-if __name__ == "__main__":
-    # for i in csv_data.keys():
-    forecast = Forecasting(return_data("Jawa Timur"))
-    # print(forecast.nilai_mape)
-    # print(forecast.mean)
-    # # print(forecast.panjang_interval)
-    # for i in range(len(forecast.defuzzifikasi)):
-    for i in range(len(forecast.grup)):
-        if i < 3 or i > len(forecast.grup) - 4:
-            print(f"{[i]}")
-        #     # print(forecast.defuzzifikasi[i])
-        #     print(forecast.defuzzifikasi[i])
-        else:
-            pass
+# if __name__ == "__main__":
+#     # for i in csv_data.keys():
+#     # forecast = Forecasting(return_data("Jawa Timur"))
+#     # print(forecast.nilai_mape)
+#     # print(forecast.mean)
+#     # # print(forecast.panjang_interval)
+#     # for i in range(len(forecast.defuzzifikasi)):
+#     for i in range(len(forecast.grup)):
+#         if i < 3 or i > len(forecast.grup) - 4:
+#             print(f"{[i]}")
+#         #     # print(forecast.defuzzifikasi[i])
+#         #     print(forecast.defuzzifikasi[i])
+#         else:
+#             pass
