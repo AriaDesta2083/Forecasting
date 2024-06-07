@@ -28,7 +28,6 @@ show_pages(
     ]
 )
 
-
 st.header("Peramalan Harga Gula Pasir Lokal Tradisional Di Pasar Tradisional Indonesia")
 
 tab1, tab2 = st.tabs(["💵 HASIL PERAMALAN", "📈 GRAFIK PERAMALAN"])
