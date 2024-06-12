@@ -4,15 +4,33 @@ import math
 #! ENCODING DATA
 
 
+class Prepocessing:
+    def __init__(self, data):
+        print("\n| PREPOCESSING |\n")
+        print("\n| ENCODING |\n")
+        self.encoding = encoding_data(data)
+        print("\n| ENCODING SUCCESS |\n")
+        print("\n| MISSING VALUE |\n")
+        self.missingvalue = missing_value(self.encoding)
+        print("\n| MISSING VALUE SUCCESS |\n")
+        print("\n| OUTLIER |\n")
+        self.outlier = data_outlier(self.missingvalue)
+        print("\n| OUTLIER SUCCESS |\n")
+        print("\n| PREPOCESSING SUCCESS |\n")
+
+
 def prepocessing(data):
     print()
     print("| PREPOCESSING |")
     print()
     print("| ENCODING |")
+    print()
     encoddata = encoding_data(data)
+    print()
     print("| ENCODING SUCCESS |")
     print()
     print("| MISSING VALUE |")
+    print()
     missingvalue = missing_value(encoddata)
     print("| MISSING VALUE SUCCESS |")
     print()
@@ -29,8 +47,6 @@ def prepocessing(data):
 
 def encoding_data(data):
     tanggal, harga = data[0], data[1]
-    print("len(tanggal) ", len(tanggal))
-    print("len(harga) ", len(harga))
     print(f"type awal | tanggal : {type(tanggal[1])} | harga : {type(harga[1])} |")
     for i in range(len(harga)):
         if harga[i] == "-":
@@ -79,17 +95,23 @@ def mv_tanggal(tanggal, harga):
         dictHari[hari[t.weekday()]] += 1
     for h, c in dictHari.items():
         print(f"{h} : {c}", end=" ")
+    print()
     if dictHari["Sabtu"] == 0 and dictHari["Minggu"] == 0:
         print(f"mv tanggal : {len(count)}")
         return tanggal, harga
     else:
+        new_tanggal = []
+        new_harga = []
         for i in range(len(tanggal)):
             if hari[tanggal[i].weekday()] in ["Sabtu", "Minggu"]:
-                del tanggal[i]
-                del harga[i]
                 count.append((tanggal[i], harga[i]))
+                print("nm ", tanggal[i], hari[tanggal[i].weekday()])
+            else:
+                new_tanggal.append(tanggal[i])
+                new_harga.append(harga[i])
+        print()
         print(f"mv tanggal : {len(count)}")
-        return tanggal, harga
+        return new_tanggal, new_harga
 
 
 def mv_harga(tanggal, harga):
@@ -113,7 +135,7 @@ def normalisasi_minmax(dbf, dmin, dmax):
     new_dmin, new_dmax = d1 if d1 != dmin else d1 - 500, d2 if d2 != dmax else d2 + 500
     pre = (dbf - dmin) / (dmax - dmin) * (new_dmax - new_dmin) + new_dmin
     hasil = int(round(pre))
-    print(hasil, end=" , ")
+    print(hasil)
     return hasil
 
 
