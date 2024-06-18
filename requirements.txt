@@ -1,5 +1,5 @@
 st-annotated-text
 pandas
 numpy
-altair
+altair<5
 st_pages
